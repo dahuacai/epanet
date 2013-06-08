@@ -53,10 +53,10 @@ datarootdir = $(prefix)/share
 docdir = $(datarootdir)/doc/epanet
 
 # Compiler and flags
-CC = gcc
-CFLAGS = -g -O3 -fPIC
+CC = /usr/local/gcc4.8/bin/gcc
+CFLAGS = -g -O3 -fPIC -std='c99'
 CPPFLAGS = -I $(epanetincludedir)
-LDFLAGS = -L . -W1,-rpath,$(libdir) -lm
+LDFLAGS = -L . -Wl,-rpath,$(libdir) -lm
 
 # Installer
 INSTALL = install

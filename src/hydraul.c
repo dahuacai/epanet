@@ -46,6 +46,8 @@ AUTHOR:     L. Rossman
 *******************************************************************
 */
 
+//#include <omp.h>
+#include <dispatch/dispatch.h>
 #include <stdio.h>
 #include <string.h>
 #ifndef __APPLE__
@@ -1837,13 +1839,19 @@ void  linkcoeffs()
 **--------------------------------------------------------------
 */
 {
-   int   k,n1,n2;
+   int n1,n2;
 
    /* Examine each link of network */
-   for (k=1; k<=Nlinks; k++)
-   {
-      n1 = Link[k].N1;           /* Start node of link */
-      n2 = Link[k].N2;           /* End node of link   */
+  //#pragma omp parallel for private(k) schedule(dynamic,1)
+  
+  dispatch_queue_t queue = dispatch_queue_create("com.owa.epanet.linkCoeffs", DISPATCH_QUEUE_CONCURRENT);
+  
+  
+  dispatch_apply(Nlinks, queue, ^(size_t i) {
+    
+    int k = (int)i + 1;
+  
+    //for (k=1; k<=Nlinks; k++) {
 
       /* Compute P[k] = 1 / (dh/dQ) and Y[k] = h * P[k]   */
       /* for each link k (where h = link head loss).      */
@@ -1863,11 +1871,18 @@ void  linkcoeffs()
          case PSV:   /* If valve status fixed then treat as pipe */
                      /* otherwise ignore the valve for now. */
                      if (K[k] == MISSING) valvecoeff(k);  //pipecoeff(k);      //(2.00.11 - LR)    
-                     else continue;
+                     else return;// continue;
                      break;
-         default:    continue;                  
-      }                                         
-
+        default:    break;
+      }
+     
+     //}
+     });
+  
+  int   k;
+  for (k=1; k<=Nlinks; k++) {
+    n1 = Link[k].N1;           /* Start node of link */
+    n2 = Link[k].N2;           /* End node of link   */
       /* Update net nodal inflows (X), solution matrix (A) and RHS array (F) */
       /* (Use covention that flow out of node is (-), flow into node is (+)) */
       X[n1] -= Q[k];
