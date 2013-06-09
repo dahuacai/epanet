@@ -1844,10 +1844,8 @@ void  linkcoeffs()
    /* Examine each link of network */
   //#pragma omp parallel for private(k) schedule(dynamic,1)
   
-  dispatch_queue_t queue = dispatch_queue_create("com.owa.epanet.linkCoeffs", DISPATCH_QUEUE_CONCURRENT);
   
-  
-  dispatch_apply(Nlinks, queue, ^(size_t i) {
+  dispatch_apply(Nlinks, _gcdQueue, ^(size_t i) {
     
     int k = (int)i + 1;
   

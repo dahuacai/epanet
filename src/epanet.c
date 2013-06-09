@@ -2879,6 +2879,12 @@ int  allocdata()
 
 /* Allocate memory for rule base (see RULES.C) */
    if (!errcode) errcode = allocrules();
+  
+  // init gcd
+  _gcdQueue = dispatch_queue_create("com.owa.epanet", DISPATCH_QUEUE_CONCURRENT);
+  
+  
+  
    return(errcode);
 }                                       /* End of allocdata */
 

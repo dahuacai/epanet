@@ -14,8 +14,11 @@ AUTHOR:     L. Rossman
 #ifndef VARS_H
 #define VARS_H
 
+#include <dispatch/dispatch.h>
 #include <stdio.h>
 #include "hash.h"
+
+dispatch_queue_t _gcdQueue;
 
  FILE			*InFile,               /* Input file pointer           */
                 *OutFile,              /* Output file pointer          */
