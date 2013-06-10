@@ -9,6 +9,10 @@
 #ifndef EPANET2_H
 #define EPANET2_H
 
+#ifndef EN_API_FLOAT_TYPE
+#define EN_API_FLOAT_TYPE float
+#endif
+
 // --- Define the EPANET toolkit constants
 
 #define EN_ELEVATION    0    /* Node parameters */
@@ -202,46 +206,46 @@ extern "C" {
  int   DLLEXPORT ENresetreport(void);
  int   DLLEXPORT ENsetreport(char *);
 
- int   DLLEXPORT ENgetcontrol(int, int *, int *, float *,
-                      int *, float *);
+ int   DLLEXPORT ENgetcontrol(int, int *, int *, EN_API_FLOAT_TYPE *,
+                      int *, EN_API_FLOAT_TYPE *);
  int   DLLEXPORT ENgetcount(int, int *);
- int   DLLEXPORT ENgetoption(int, float *);
+ int   DLLEXPORT ENgetoption(int, EN_API_FLOAT_TYPE *);
  int   DLLEXPORT ENgettimeparam(int, long *);
  int   DLLEXPORT ENgetflowunits(int *);
  int   DLLEXPORT ENgetpatternindex(char *, int *);
  int   DLLEXPORT ENgetpatternid(int, char *);
  int   DLLEXPORT ENgetpatternlen(int, int *);
- int   DLLEXPORT ENgetpatternvalue(int, int, float *);
+ int   DLLEXPORT ENgetpatternvalue(int, int, EN_API_FLOAT_TYPE *);
  int   DLLEXPORT ENgetqualtype(int *, int *);
  int   DLLEXPORT ENgeterror(int, char *, int);
 
  int   DLLEXPORT ENgetnodeindex(char *, int *);
  int   DLLEXPORT ENgetnodeid(int, char *);
  int   DLLEXPORT ENgetnodetype(int, int *);
- int   DLLEXPORT ENgetnodevalue(int, int, float *);
+ int   DLLEXPORT ENgetnodevalue(int, int, EN_API_FLOAT_TYPE *);
 
  int   DLLEXPORT ENgetnumdemands(int, int *);
- int   DLLEXPORT ENgetbasedemand(int, int, float *);
+ int   DLLEXPORT ENgetbasedemand(int, int, EN_API_FLOAT_TYPE *);
  int   DLLEXPORT ENgetdemandpattern(int, int, int *);
 
  int   DLLEXPORT ENgetlinkindex(char *, int *);
  int   DLLEXPORT ENgetlinkid(int, char *);
  int   DLLEXPORT ENgetlinktype(int, int *);
  int   DLLEXPORT ENgetlinknodes(int, int *, int *);
- int   DLLEXPORT ENgetlinkvalue(int, int, float *);
+ int   DLLEXPORT ENgetlinkvalue(int, int, EN_API_FLOAT_TYPE *);
   
- int   DLLEXPORT ENgetcurve(int curveIndex, int *nValues, float **xValues, float **yValues);
+ int   DLLEXPORT ENgetcurve(int curveIndex, int *nValues, EN_API_FLOAT_TYPE **xValues, EN_API_FLOAT_TYPE **yValues);
   
  int   DLLEXPORT ENgetversion(int *);
 
- int   DLLEXPORT ENsetcontrol(int, int, int, float, int, float);
- int   DLLEXPORT ENsetnodevalue(int, int, float);
- int   DLLEXPORT ENsetlinkvalue(int, int, float);
+ int   DLLEXPORT ENsetcontrol(int, int, int, EN_API_FLOAT_TYPE, int, EN_API_FLOAT_TYPE);
+ int   DLLEXPORT ENsetnodevalue(int, int, EN_API_FLOAT_TYPE);
+ int   DLLEXPORT ENsetlinkvalue(int, int, EN_API_FLOAT_TYPE);
  int   DLLEXPORT ENaddpattern(char *);
- int   DLLEXPORT ENsetpattern(int, float *, int);
- int   DLLEXPORT ENsetpatternvalue(int, int, float);
+ int   DLLEXPORT ENsetpattern(int, EN_API_FLOAT_TYPE *, int);
+ int   DLLEXPORT ENsetpatternvalue(int, int, EN_API_FLOAT_TYPE);
  int   DLLEXPORT ENsettimeparam(int, long);
- int   DLLEXPORT ENsetoption(int, float);
+ int   DLLEXPORT ENsetoption(int, EN_API_FLOAT_TYPE);
  int   DLLEXPORT ENsetstatusreport(int);
  int   DLLEXPORT ENsetqualtype(int, char *, char *, char *);
 #ifdef __cplusplus
