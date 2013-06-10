@@ -1845,8 +1845,8 @@ void  linkcoeffs()
   //#pragma omp parallel for private(k) schedule(dynamic,1)
   
   
-  dispatch_apply(Nlinks, _gcdQueue, ^(size_t i) {
-    
+  //dispatch_apply(Nlinks, _gcdQueue, ^(size_t i) {
+  for (int i=0; i<Nlinks; ++i) {
     int k = (int)i + 1;
   
     //for (k=1; k<=Nlinks; k++) {
@@ -1859,26 +1859,44 @@ void  linkcoeffs()
       switch (Link[k].Type)
       {
          case CV:
-         case PIPE:  pipecoeff(k); break;
-         case PUMP:  pumpcoeff(k); break;
-         case PBV:   pbvcoeff(k);  break;
-         case TCV:   tcvcoeff(k);  break;
-         case GPV:   gpvcoeff(k);  break;
+         case PIPE:
+          pipecoeff(k);
+          break;
+          
+         case PUMP:
+          pumpcoeff(k);
+          break;
+          
+         case PBV:
+          pbvcoeff(k);
+          break;
+          
+         case TCV:
+          tcvcoeff(k);
+          break;
+          
+         case GPV:
+          gpvcoeff(k);
+          break;
+          
          case FCV:   
          case PRV:
-         case PSV:   /* If valve status fixed then treat as pipe */
-                     /* otherwise ignore the valve for now. */
-                     if (K[k] == MISSING) valvecoeff(k);  //pipecoeff(k);      //(2.00.11 - LR)    
-                     else return;// continue;
-                     break;
+         case PSV:   /* If valve status fixed then treat as pipe - otherwise ignore the valve for now. */
+          if (K[k] == MISSING) {
+            valvecoeff(k);  //pipecoeff(k);      //(2.00.11 - LR)
+          }
+          else {
+            continue;
+          }
+          break;
         default:    break;
       }
      
      //}
-     });
+    // });
   
-  int   k;
-  for (k=1; k<=Nlinks; k++) {
+  //int   k;
+  //for (k=1; k<=Nlinks; k++) {
     n1 = Link[k].N1;           /* Start node of link */
     n2 = Link[k].N2;           /* End node of link   */
       /* Update net nodal inflows (X), solution matrix (A) and RHS array (F) */
