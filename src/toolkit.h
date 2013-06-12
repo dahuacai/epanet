@@ -18,9 +18,6 @@ AUTHOR:     L. Rossman
 #ifndef TOOLKIT_H
 #define TOOLKIT_H
 
-#ifndef EN_API_FLOAT_TYPE
-  #define EN_API_FLOAT_TYPE float
-#endif
 
 #ifndef DLLEXPORT
   #ifdef DLL

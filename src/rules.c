@@ -704,7 +704,7 @@ int  checkstatus(struct Premise *p)
         case IS_OPEN:
         case IS_CLOSED:
         case IS_ACTIVE:
-                i = S[p->index];
+                i = _linkStatus[p->index];
                 if      (i <= CLOSED) j = IS_CLOSED;
                 else if (i == ACTIVE) j = IS_ACTIVE;
                 else                  j = IS_OPEN;
@@ -736,7 +736,7 @@ int  checkvalue(struct Premise *p)
 
 /*** Updated 10/25/00 ***/
         case r_DEMAND:    if (p->object == r_SYSTEM) x = Dsystem*Ucf[DEMAND];
-                          else x = D[i]*Ucf[DEMAND];
+                          else x = _nodeDemand[i]*Ucf[DEMAND];
                           break;
 
         case r_HEAD:
@@ -746,10 +746,10 @@ int  checkvalue(struct Premise *p)
                           break;
         case r_LEVEL:     x = (H[i]-Node[i].El)*Ucf[HEAD];
                           break;
-        case r_FLOW:      x = ABS(Q[i])*Ucf[FLOW];
+        case r_FLOW:      x = ABS(_linkFlow[i])*Ucf[FLOW];
                           break;
-        case r_SETTING:   if (K[i] == MISSING) return(0);
-                          x = K[i];
+        case r_SETTING:   if (_linkSetting[i] == MISSING) return(0);
+                          x = _linkSetting[i];
                           switch (Link[i].Type)
                           {
                              case PRV:
@@ -761,14 +761,14 @@ int  checkvalue(struct Premise *p)
         case r_FILLTIME:  if (i <= Njuncs) return(0);
                           j = i-Njuncs;
                           if (Tank[j].A == 0.0) return(0);
-                          if (D[i] <= TINY) return(0);
-                          x = (Tank[j].Vmax - Tank[j].V)/D[i];
+                          if (_nodeDemand[i] <= TINY) return(0);
+                          x = (Tank[j].Vmax - Tank[j].V)/_nodeDemand[i];
                           break;
         case r_DRAINTIME: if (i <= Njuncs) return(0);
                           j = i-Njuncs;
                           if (Tank[j].A == 0.0) return(0);
-                          if (D[i] >= -TINY) return(0);
-                          x = (Tank[j].Vmin - Tank[j].V)/D[i];
+                          if (_nodeDemand[i] >= -TINY) return(0);
+                          x = (Tank[j].Vmin - Tank[j].V)/_nodeDemand[i];
                           break;
         default:          return(0);
     }
@@ -875,21 +875,21 @@ int  takeactions()
         flag = FALSE;
         a = item->action;
         k = a->link;
-        s = S[k];
-        v = K[k];
+        s = _linkStatus[k];
+        v = _linkSetting[k];
         x = a->setting;
 
         /* Switch link from closed to open */
         if (a->status == IS_OPEN && s <= CLOSED)
         {
-            setlinkstatus(k, 1, &S[k], &K[k]);
+            setlinkstatus(k, 1, &_linkStatus[k], &_linkSetting[k]);
             flag = TRUE;
         }
 
         /* Switch link from not closed to closed */ 
         else if (a->status == IS_CLOSED && s > CLOSED)
         {
-            setlinkstatus(k, 0, &S[k], &K[k]);
+            setlinkstatus(k, 0, &_linkStatus[k], &_linkSetting[k]);
             flag = TRUE;
         }
 
@@ -905,7 +905,7 @@ int  takeactions()
             }
             if (ABS(x-v) > tol)
             {
-                setlinksetting(k, x, &S[k], &K[k]);
+                setlinksetting(k, x, &_linkStatus[k], &_linkSetting[k]);
                 flag = TRUE;
             }
         }

@@ -1454,7 +1454,7 @@ int DLLEXPORT ENgetnodevalue(int index, int code, EN_API_FLOAT_TYPE *value)
          break;                                                                //(2.00.11 - LR)
          
       case EN_DEMAND:
-         v = D[index]*Ucf[FLOW];
+         v = _nodeDemand[index]*Ucf[FLOW];
          break;
 
       case EN_HEAD:
@@ -1466,7 +1466,7 @@ int DLLEXPORT ENgetnodevalue(int index, int code, EN_API_FLOAT_TYPE *value)
          break;
 
       case EN_QUALITY:
-         v = C[index]*Ucf[QUALITY];
+         v = _nodeQuality[index]*Ucf[QUALITY];
          break;
 
 /*** New parameters added for retrieval begins here   ***/                     //(2.00.12 - LR)
@@ -1696,19 +1696,19 @@ int DLLEXPORT ENgetlinkvalue(int index, int code, EN_API_FLOAT_TYPE *value)
       case EN_FLOW:
 
 /*** Updated 10/25/00 ***/
-         if (S[index] <= CLOSED) v = 0.0;
-         else v = Q[index]*Ucf[FLOW];
+         if (_linkStatus[index] <= CLOSED) v = 0.0;
+         else v = _linkFlow[index]*Ucf[FLOW];
          break;
 
       case EN_VELOCITY:
          if (Link[index].Type == PUMP) v = 0.0;
 
 /*** Updated 11/19/01 ***/
-         else if (S[index] <= CLOSED) v = 0.0;
+         else if (_linkStatus[index] <= CLOSED) v = 0.0;
 
          else
          {
-            q = ABS(Q[index]);
+            q = ABS(_linkFlow[index]);
             a = PI*SQR(Link[index].Diam)/4.0;
             v = q/a*Ucf[VELOCITY];
          }
@@ -1717,7 +1717,7 @@ int DLLEXPORT ENgetlinkvalue(int index, int code, EN_API_FLOAT_TYPE *value)
       case EN_HEADLOSS:
 
 /*** Updated 11/19/01 ***/
-         if (S[index] <= CLOSED) v = 0.0;
+         if (_linkStatus[index] <= CLOSED) v = 0.0;
 
          else
          {
@@ -1728,15 +1728,15 @@ int DLLEXPORT ENgetlinkvalue(int index, int code, EN_API_FLOAT_TYPE *value)
          break;
 
       case EN_STATUS:
-         if (S[index] <= CLOSED) v = 0.0;
+         if (_linkStatus[index] <= CLOSED) v = 0.0;
          else v = 1.0;
          break;
 
       case EN_SETTING:
          if (Link[index].Type == PIPE || Link[index].Type == CV) 
             return(ENgetlinkvalue(index, EN_ROUGHNESS, value));
-         if (K[index] == MISSING) v = 0.0;
-         else                     v = K[index];
+         if (_linkSetting[index] == MISSING) v = 0.0;
+         else                     v = _linkSetting[index];
          switch (Link[index].Type)
          {
             case PRV:
@@ -2165,7 +2165,7 @@ int DLLEXPORT ENsetlinkvalue(int index, int code, EN_API_FLOAT_TYPE v)
          if (code == EN_INITSTATUS)
            setlinkstatus(index, s, &Link[index].Stat, &Link[index].Kc);
          else
-           setlinkstatus(index, s, &S[index], &K[index]);
+           setlinkstatus(index, s, &_linkStatus[index], &_linkSetting[index]);
          break;
 
       case EN_INITSETTING:
@@ -2192,7 +2192,7 @@ int DLLEXPORT ENsetlinkvalue(int index, int code, EN_API_FLOAT_TYPE v)
             if (code == EN_INITSETTING)
               setlinksetting(index, value, &Link[index].Stat, &Link[index].Kc);
             else
-              setlinksetting(index, value, &S[index], &K[index]);
+              setlinksetting(index, value, &_linkStatus[index], &_linkSetting[index]);
          }
          break;
 
@@ -2735,13 +2735,13 @@ void initpointers()
 **----------------------------------------------------------------
 */
 {
-   D        = NULL;
-   C        = NULL;
+   _nodeDemand        = NULL;
+   _nodeQuality        = NULL;
    H        = NULL;
-   Q        = NULL;
+   _linkFlow        = NULL;
    R        = NULL;
-   S        = NULL;
-   K        = NULL;
+   _linkStatus        = NULL;
+   _linkSetting        = NULL;
    OldStat  = NULL;
 
    Node     = NULL;
@@ -2804,12 +2804,12 @@ int  allocdata()
    {
       n = MaxNodes + 1;
       Node = (Snode *)  calloc(n, sizeof(Snode));
-      D    = (double *) calloc(n, sizeof(double));
-      C    = (double *) calloc(n, sizeof(double));
+      _nodeDemand    = (double *) calloc(n, sizeof(double));
+      _nodeQuality    = (double *) calloc(n, sizeof(double));
       H    = (double *) calloc(n, sizeof(double));
       ERRCODE(MEMCHECK(Node));
-      ERRCODE(MEMCHECK(D));
-      ERRCODE(MEMCHECK(C));
+      ERRCODE(MEMCHECK(_nodeDemand));
+      ERRCODE(MEMCHECK(_nodeQuality));
       ERRCODE(MEMCHECK(H));
    }
 
@@ -2818,13 +2818,13 @@ int  allocdata()
    {
       n = MaxLinks + 1;
       Link = (Slink *) calloc(n, sizeof(Slink));
-      Q    = (double *) calloc(n, sizeof(double));
-      K    = (double *) calloc(n, sizeof(double));
-      S    = (char  *) calloc(n, sizeof(char));
+      _linkFlow    = (double *) calloc(n, sizeof(double));
+      _linkSetting    = (double *) calloc(n, sizeof(double));
+      _linkStatus    = (char  *) calloc(n, sizeof(char));
       ERRCODE(MEMCHECK(Link));
-      ERRCODE(MEMCHECK(Q));
-      ERRCODE(MEMCHECK(K));
-      ERRCODE(MEMCHECK(S));
+      ERRCODE(MEMCHECK(_linkFlow));
+      ERRCODE(MEMCHECK(_linkSetting));
+      ERRCODE(MEMCHECK(_linkStatus));
    } 
 
 /* Allocate memory for tanks, sources, pumps, valves,   */
@@ -2941,12 +2941,12 @@ void  freedata()
     Psource source;
 
 /* Free memory for computed results */
-    free(D);
-    free(C);
+    free(_nodeDemand);
+    free(_nodeQuality);
     free(H);
-    free(Q);
-    free(K);
-    free(S);
+    free(_linkFlow);
+    free(_linkSetting);
+    free(_linkStatus);
 
 /* Free memory for node data */
     if (Node != NULL)

@@ -148,7 +148,7 @@ void  initqual()
    int i;
 
    /* Initialize quality, tank volumes, & source mass flows */
-   for (i=1; i<=Nnodes; i++) C[i] = Node[i].C0;
+   for (i=1; i<=Nnodes; i++) _nodeQuality[i] = Node[i].C0;
    for (i=1; i<=Ntanks; i++) Tank[i].C = Node[Tank[i].Node].C0;
    for (i=1; i<=Ntanks; i++) Tank[i].V = Tank[i].V0;
    for (i=1; i<=Nnodes; i++)
@@ -164,7 +164,7 @@ void  initqual()
    if (Qualflag != NONE)
    {
       /* Initialize WQ at trace node (if applicable) */
-      if (Qualflag == TRACE) C[TraceNode] = 100.0;
+      if (Qualflag == TRACE) _nodeQuality[TraceNode] = 100.0;
 
       /* Compute Schmidt number */
       if (Diffus > 0.0)
@@ -239,8 +239,8 @@ int runqual(long *t)
         
         for (int i=1; i<= Nlinks; ++i)
         {
-          if (S[i] <= CLOSED) {
-            QLinkFlow[i-1] = Q[i];
+          if (_linkStatus[i] <= CLOSED) {
+            QLinkFlow[i-1] = _linkFlow[i];
           }
         }
 
@@ -294,8 +294,8 @@ int nextqual(long *tstep)
     
     // restore the previous step's pipe link flows
     for (int i=1; i<=Nlinks; i++) {
-      if (S[i] <= CLOSED) {
-        Q[i] = 0.0;
+      if (_linkStatus[i] <= CLOSED) {
+        _linkFlow[i] = 0.0;
       }
     }
 
@@ -323,8 +323,8 @@ int nextqual(long *tstep)
     }
     
     for (int i=1; i<=Nlinks; ++i) {
-      if (S[i] <= CLOSED) {
-        Q[i] = QLinkFlow[i-1];
+      if (_linkStatus[i] <= CLOSED) {
+        _linkFlow[i] = QLinkFlow[i-1];
       }
     }
     
@@ -534,7 +534,7 @@ void  initsegs()
 
       /* Establish flow direction */
       FlowDir[k] = '+';
-      if (Q[k] < 0.) FlowDir[k] = '-';
+      if (_linkFlow[k] < 0.) FlowDir[k] = '-';
 
       /* Set segs to zero */
       LastSeg[k] = NULL;
@@ -542,7 +542,7 @@ void  initsegs()
 
       /* Find quality of downstream node */
       j = DOWN_NODE(k);
-      if (j <= Njuncs) c = C[j];
+      if (j <= Njuncs) c = _nodeQuality[j];
       else             c = Tank[j-Njuncs].C;
 
       /* Fill link with single segment with this quality */
@@ -601,8 +601,8 @@ void  reorientsegs()
 
       /* Find new flow direction */
       newdir = '+';
-      if (Q[k] == 0.0)     newdir = FlowDir[k];
-      else if (Q[k] < 0.0) newdir = '-';
+      if (_linkFlow[k] == 0.0)     newdir = FlowDir[k];
+      else if (_linkFlow[k] < 0.0) newdir = '-';
 
       /* If direction changes, then reverse order of segments */
       /* (first to last) and save new direction */
@@ -767,8 +767,9 @@ void accumulate(long dt)
          VolIn[j]++;
       }
    }
-   for (k=1; k<=Nnodes; k++)
+   for (k=1; k<=Nnodes; k++) {
      if (VolIn[k] > 0.0) XC[k] = MassIn[k]/VolIn[k];
+   }
 
    /* Move mass from first segment of each pipe into downstream node */
    memset(VolIn,0,(Nnodes+1)*sizeof(double));
@@ -777,7 +778,7 @@ void accumulate(long dt)
    {
       i = UP_NODE(k);               /* Upstream node */
       j = DOWN_NODE(k);             /* Downstream node */
-      v = ABS(Q[k])*dt;             /* Flow volume */
+      v = ABS(_linkFlow[k])*dt;             /* Flow volume */
 
 ////  Start of deprecated code segment  ////                                   //(2.00.12 - LR)
          
@@ -860,16 +861,16 @@ void updatenodes(long dt)
    /* Update junction quality */
    for (i=1; i<=Njuncs; i++)
    {
-      if (D[i] < 0.0) VolIn[i] -= D[i]*dt;
-      if (VolIn[i] > 0.0) C[i] = MassIn[i]/VolIn[i];
-      else                C[i] = XC[i];
+      if (_nodeDemand[i] < 0.0) VolIn[i] -= _nodeDemand[i]*dt;
+      if (VolIn[i] > 0.0) _nodeQuality[i] = MassIn[i]/VolIn[i];
+      else                _nodeQuality[i] = XC[i];
    }
 
    /* Update tank quality */
    updatetanks(dt);
 
    /* For flow tracing, set source node concen. to 100. */
-   if (Qualflag == TRACE) C[TraceNode] = 100.0;
+   if (Qualflag == TRACE) _nodeQuality[TraceNode] = 100.0;
 }
 
 
@@ -901,12 +902,20 @@ void sourceinput(long dt)
 
       /* Skip node if no WQ source */
       source = Node[n].S;
-      if (source == NULL) continue;
-      if (source->C0 == 0.0) continue;
+      if (source == NULL) {
+        continue;
+      }
+      if (source->C0 == 0.0) {
+        continue;
+      }
     
       /* Find total flow volume leaving node */
-      if (n <= Njuncs) volout = VolIn[n];  /* Junctions */
-      else volout = VolIn[n] - D[n]*dt;    /* Tanks */
+      if (n <= Njuncs) {
+        volout = VolIn[n];  /* Junctions */
+      }
+      else {
+        volout = VolIn[n] - _nodeDemand[n]*dt;    /* Tanks */
+      }
       qout = volout / (double) dt;
 
       /* Evaluate source input only if node outflow > cutoff flow */
@@ -922,13 +931,13 @@ void sourceinput(long dt)
             case CONCEN:
 
                /* Only add source mass if demand is negative */
-               if (D[n] < 0.0)
+               if (_nodeDemand[n] < 0.0)
                {
-                  massadded = -s*D[n]*dt;
+                  massadded = -s*_nodeDemand[n]*dt;
 
                   /* If node is a tank then set concen. to 0. */
                   /* (It will be re-set to true value in updatesourcenodes()) */
-                  if (n > Njuncs) C[n] = 0.0;
+                  if (n > Njuncs) _nodeQuality[n] = 0.0;
                }
                else massadded = 0.0;
                break;
@@ -942,7 +951,7 @@ void sourceinput(long dt)
             /* Mass added is difference between source */
             /* & node concen. times outflow volume  */
             case SETPOINT:
-               if (s > C[n]) massadded = (s-C[n])*volout;
+               if (s > _nodeQuality[n]) massadded = (s-_nodeQuality[n])*volout;
                else massadded = 0.0;
                break;
 
@@ -970,8 +979,8 @@ void sourceinput(long dt)
          if (Tank[j].A == 0.0)
          {
             n = Njuncs + j;
-            volout = VolIn[n] - D[n]*dt;
-            if (volout > 0.0) Wsource += volout*C[n];
+            volout = VolIn[n] - _nodeDemand[n]*dt;
+            if (volout > 0.0) Wsource += volout*_nodeQuality[n];
          }
       }
    }
@@ -996,16 +1005,16 @@ void release(long dt)
    {
 
       /* Ignore links with no flow */
-      if (Q[k] == 0.0) continue;
+      if (_linkFlow[k] == 0.0) continue;
 
       /* Find flow volume released to link from upstream node */
       /* (NOTE: Flow volume is allowed to be > link volume.) */
       n = UP_NODE(k);
-      q = ABS(Q[k]);
+      q = ABS(_linkFlow[k]);
       v = q*dt;
 
       /* Include source contribution in quality released from node. */
-      c = C[n] + XC[n];
+      c = _nodeQuality[n] + XC[n];
 
       /* If link has a last seg, check if its quality     */
       /* differs from that of the flow released from node.*/
@@ -1050,13 +1059,13 @@ void  updatesourcenodes(long dt)
       if (source == NULL) continue;
 
       /* Add source to current node concen. */
-      C[n] += XC[n];
+      _nodeQuality[n] += XC[n];
 
       /* For tanks, node concen. = internal concen. */
       if (n > Njuncs)
       {
          i = n - Njuncs;
-         if (Tank[i].A > 0.0) C[n] = Tank[i].C;
+         if (Tank[i].A > 0.0) _nodeQuality[n] = Tank[i].C;
       }
 
       /* Normalize mass added at source to time step */
@@ -1084,7 +1093,7 @@ void  updatetanks(long dt)
       /* Use initial quality for reservoirs */
       if (Tank[i].A == 0.0)
       {
-         C[n] = Node[n].C0;
+         _nodeQuality[n] = Node[n].C0;
       }
 
       /* Update tank WQ based on mixing model */
@@ -1153,7 +1162,7 @@ void  tankmix1(int i, long dt)
    /* Determine tank & volumes */
    vold = Tank[i].V;
    n = Tank[i].Node;
-   Tank[i].V += D[n]*dt;
+   Tank[i].V += _nodeDemand[n]*dt;
    vin  = VolIn[n];
 
    /* Compute inflow concen. */
@@ -1166,7 +1175,7 @@ void  tankmix1(int i, long dt)
    c = MIN(c, cmax);
    c = MAX(c, 0.0);
    Tank[i].C = c;
-   C[n] = Tank[i].C;
+   _nodeQuality[n] = Tank[i].C;
 }
 
 /*** Updated 10/25/00 ***/
@@ -1203,7 +1212,7 @@ void  tankmix2(int i, long dt)
 
    /* Find inflows & outflows */
    n = Tank[i].Node;
-   vnet = D[n]*dt;
+   vnet = _nodeDemand[n]*dt;
    vin = VolIn[n];
    if (vin > 0.0) cin = MassIn[n]/vin;
    else           cin = 0.0;
@@ -1259,7 +1268,7 @@ void  tankmix2(int i, long dt)
    /* represent quality of tank since this is where */
    /* outflow begins to flow from */
    Tank[i].C = seg1->c;
-   C[n] = Tank[i].C;
+   _nodeQuality[n] = Tank[i].C;
 }
 
 
@@ -1294,7 +1303,7 @@ void  tankmix3(int i, long dt)
 
    /* Find inflows & outflows */
    n = Tank[i].Node;
-   vnet = D[n]*dt;
+   vnet = _nodeDemand[n]*dt;
    vin = VolIn[n];
    vout = vin - vnet;
    if (vin > 0.0) cin = MassIn[n]/VolIn[n];
@@ -1335,7 +1344,7 @@ void  tankmix3(int i, long dt)
    /* to represent overall quality of tank */
    if (vsum > 0.0) Tank[i].C = csum/vsum;
    else            Tank[i].C = FirstSeg[k]->c;
-   C[n] = Tank[i].C;
+   _nodeQuality[n] = Tank[i].C;
 
    /* Add new last segment for new flow entering tank */
    if (vin > 0.0)
@@ -1385,7 +1394,7 @@ void  tankmix4(int i, long dt)
 
    /* Find inflows & outflows */
    n = Tank[i].Node;
-   vnet = D[n]*dt;
+   vnet = _nodeDemand[n]*dt;
    vin = VolIn[n];
    if (vin > 0.0) cin = MassIn[n]/VolIn[n];
    else           cin = 0.0;
@@ -1453,7 +1462,7 @@ void  tankmix4(int i, long dt)
       /* Reported tank quality is mixture of flow released and any inflow */
       Tank[i].C = (csum + MassIn[n])/(vsum + vin);
    }
-   C[n] = Tank[i].C;
+   _nodeQuality[n] = Tank[i].C;
 }         
 
 
@@ -1508,7 +1517,7 @@ double  avgqual(int k)
        seg = seg->prev;
    }
    if (vsum > 0.0) return(msum/vsum);
-   else return( (C[Link[k].N1] + C[Link[k].N2])/2. );
+   else return( (_nodeQuality[Link[k].N1] + _nodeQuality[Link[k].N2])/2. );
 }
 
 
@@ -1558,7 +1567,7 @@ double piperate(int k)
 
 /* Compute Reynolds No. */
    a = PI*d*d/4.0;
-   u = ABS(Q[k])/a;
+   u = ABS(_linkFlow[k])/a;
    Re = u*d/Viscos;
 
 /* Compute Sherwood No. for stagnant flow  */

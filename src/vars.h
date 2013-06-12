@@ -147,16 +147,16 @@ EXTERN long     Tstart,                /* Starting time of day (sec)   */
 EXTERN SField   Field[MAXVAR];         /* Output reporting fields      */
 
 /* Array pointers not allocated and freed in same routine */
-EXTERN char     *S,                    /* Link status                  */
+EXTERN char     *_linkStatus,          /* Link status                  */
                 *OldStat;              /* Previous link/tank status    */
-EXTERN double   *D,                    /* Node actual demand           */
-                *C,                    /* Node actual quality          */
+EXTERN double   *_nodeDemand,          /* Node actual demand           */
+                *_nodeQuality,         /* Node actual quality          */
                 *E,                    /* Emitter flows                */
-                *K,                    /* Link settings                */
-                *Q,                    /* Link flows                   */
+                *_linkSetting,         /* Link settings                */
+                *_linkFlow,            /* Link flows                   */
                 *R,                    /* Pipe reaction rate           */
                 *X,                    /* General purpose array        */
-                *XC;                    /* General purpose array        */
+                *XC;                   /* General purpose array        */
 EXTERN double   *H;                    /* Node heads                   */
 EXTERN double *QTankVolumes;
 EXTERN double *QLinkFlow;
