@@ -236,11 +236,12 @@ int runqual(long *t)
       }
       else {
         // stepwise calculation - hydraulic results are already in memory
-        for (int i=1; i<= Ntanks; ++i) {
+		int i;//dhc-modify
+        for (i=1; i<= Ntanks; ++i) {
           QTankVolumes[i-1] = Tank[i].V;
         }
-        
-        for (int i=1; i<= Nlinks; ++i)
+       
+        for ( i=1; i<= Nlinks; ++i)
         {
           if (LinkStatus[i] <= CLOSED) {
             QLinkFlow[i-1] = Q[i];
@@ -251,11 +252,12 @@ int runqual(long *t)
    }
    else {
         // stepwise calculation
-        for (int i=1; i<= Ntanks; ++i) {
+         int i;
+        for ( i=1; i<= Ntanks; ++i) {
           QTankVolumes[i-1] = Tank[i].V;
         }
         
-        for (int i=1; i<= Nlinks; ++i)
+        for ( i=1; i<= Nlinks; ++i)
         {
           if (LinkStatus[i] <= CLOSED) {
             QLinkFlow[i-1] = Q[i];
@@ -281,7 +283,7 @@ int nextqual(long *tstep)
 {
    long    hydstep;       /* Hydraulic solution time step */
    int     errcode = 0;
-
+   double *tankVolumes;
    /* Determine time step */
    *tstep = 0;
   
@@ -290,19 +292,21 @@ int nextqual(long *tstep)
   if (Htime <= Dur) hydstep = Htime - Qtime;
   else hydstep = 0;
   
-  double *tankVolumes;
+
   
   // if we're operating in stepwise mode, capture the tank levels so we can restore them later.
   if (OpenHflag) {
+	int i;
     tankVolumes = calloc(Ntanks, sizeof(double));
-    for (int i=1; i<=Ntanks; ++i) {
+	
+    for ( i=1; i<=Ntanks; ++i) {
       if (Tank[i].A != 0) { // skip reservoirs
         tankVolumes[i-1] = Tank[i].V;
       }
     }
     
     // restore the previous step's tank volumes
-    for (int i=1; i<=Ntanks; i++) {
+    for ( i=1; i<=Ntanks; i++) {
       if (Tank[i].A != 0) { // skip reservoirs again
         int n = Tank[i].Node;
         Tank[i].V = QTankVolumes[i-1];
@@ -311,7 +315,7 @@ int nextqual(long *tstep)
     }
     
     // restore the previous step's pipe link flows
-    for (int i=1; i<=Nlinks; i++) {
+    for ( i=1; i<=Nlinks; i++) {
       if (LinkStatus[i] <= CLOSED) {
         Q[i] = 0.0;
       }
@@ -332,7 +336,8 @@ int nextqual(long *tstep)
   
   // restore tank levels to post-runH state, if needed.
   if (OpenHflag) {
-    for (int i=1; i<=Ntanks; i++) {
+	int i;
+    for ( i=1; i<=Ntanks; i++) {
       if (Tank[i].A != 0) { // skip reservoirs again
         int n = Tank[i].Node;
         Tank[i].V = tankVolumes[i-1];
@@ -340,7 +345,7 @@ int nextqual(long *tstep)
       }
     }
     
-    for (int i=1; i<=Nlinks; ++i) {
+    for ( i=1; i<=Nlinks; ++i) {
       if (LinkStatus[i] <= CLOSED) {
         Q[i] = QLinkFlow[i-1];
       }
